@@ -8,8 +8,7 @@ models/*txt
 models/*.tflite
 checkpoints/
 Test/*.png
-accuracy_vs_epochs.png
-loss_vs_epochs.png
+*.png
 colour_codes.csv
 CamVid_train.tfrecords
 tfrecords.py
