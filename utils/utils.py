@@ -240,9 +240,9 @@ def evaluate_segmentation(pred, label, num_classes, score_averaging="weighted"):
     global_accuracy = compute_global_accuracy(flat_pred, flat_label)
     class_accuracies = compute_class_accuracies(flat_pred, flat_label, num_classes)
 
-    prec = precision_score(flat_pred, flat_label, average=score_averaging)
-    rec = recall_score(flat_pred, flat_label, average=score_averaging)
-    f1 = f1_score(flat_pred, flat_label, average=score_averaging)
+    prec = precision_score(flat_label, flat_pred, average=score_averaging)
+    rec = recall_score(flat_label, flat_pred, average=score_averaging)
+    f1 = f1_score(flat_label, flat_pred, average=score_averaging)
 
     iou = compute_mean_iou(flat_pred, flat_label)
 
