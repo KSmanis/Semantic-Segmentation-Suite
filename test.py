@@ -51,8 +51,9 @@ if not os.path.isdir("%s"%("Test")):
         os.makedirs("%s"%("Test"))
 
 target=open("%s/test_scores.csv"%("Test"),'w')
-target.write("test_name, test_accuracy, precision, recall, f1 score, mean iou, %s\n" % (class_names_string))
+target.write("test_name, accuracy, balanced_accuracy, precision, recall, f1, iou, %s\n" % (class_names_string))
 scores_list = []
+balanced_scores_list = []
 class_scores_list = []
 precision_list = []
 recall_list = []
@@ -78,15 +79,16 @@ for ind in range(len(test_input_names)):
     output_image = helpers.reverse_one_hot(output_image)
     out_vis_image = helpers.colour_code_segmentation(output_image, label_values)
 
-    accuracy, class_accuracies, prec, rec, f1, iou = utils.evaluate_segmentation(pred=output_image, label=gt, num_classes=num_classes)
+    accuracy, balanced_accuracy, class_accuracies, prec, rec, f1, iou = utils.evaluate_segmentation(pred=output_image, label=gt, num_classes=num_classes)
 
     file_name = utils.filepath_to_name(test_input_names[ind])
-    target.write("%s, %f, %f, %f, %f, %f"%(file_name, accuracy, prec, rec, f1, iou))
+    target.write("%s, %f, %f, %f, %f, %f, %f"%(file_name, accuracy, balanced_accuracy, prec, rec, f1, iou))
     for item in class_accuracies:
         target.write(", %f"%(item))
     target.write("\n")
 
     scores_list.append(accuracy)
+    balanced_scores_list.append(balanced_accuracy)
     class_scores_list.append(class_accuracies)
     precision_list.append(prec)
     recall_list.append(rec)
@@ -103,18 +105,20 @@ for ind in range(len(test_input_names)):
 target.close()
 
 avg_score = np.mean(scores_list)
+avg_balanced_score = np.mean(balanced_scores_list)
 class_avg_scores = np.mean(class_scores_list, axis=0)
 avg_precision = np.mean(precision_list)
 avg_recall = np.mean(recall_list)
 avg_f1 = np.mean(f1_list)
 avg_iou = np.mean(iou_list)
 avg_time = np.mean(run_times_list)
-print("Average test accuracy = ", avg_score)
-print("Average per class test accuracies = \n")
+print(f"Accuracy = {avg_score}")
+print(f"Balanced accuracy = {avg_balanced_score}")
+print(f"Class accuracies:")
 for index, item in enumerate(class_avg_scores):
-    print("%s = %f" % (class_names_list[index], item))
-print("Average precision = ", avg_precision)
-print("Average recall = ", avg_recall)
-print("Average F1 score = ", avg_f1)
-print("Average mean IoU score = ", avg_iou)
-print("Average run time = ", avg_time)
+    print("\t%s = %f" % (class_names_list[index], item))
+print(f"Precision = {avg_precision}")
+print(f"Recall = {avg_recall}")
+print(f"F1 = {avg_f1}")
+print(f"IoU = {avg_iou}")
+print(f"Average run time = {avg_time}")

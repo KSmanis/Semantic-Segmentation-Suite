@@ -7,9 +7,7 @@ import time, datetime
 import os, random
 from scipy.misc import imread
 import ast
-from sklearn.metrics import precision_score, \
-    recall_score, confusion_matrix, classification_report, \
-    accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score, precision_score, recall_score
 
 from utils import helpers
 
@@ -180,15 +178,6 @@ def random_crop(image, label, crop_height, crop_width):
     else:
         raise Exception('Crop shape (%d, %d) exceeds image dimensions (%d, %d)!' % (crop_height, crop_width, image.shape[0], image.shape[1]))
 
-# Compute the average segmentation accuracy across all classes
-def compute_global_accuracy(pred, label):
-    total = len(label)
-    count = 0.0
-    for i in range(total):
-        if pred[i] == label[i]:
-            count = count + 1.0
-    return float(count) / float(total)
-
 # Compute the class-specific segmentation accuracy
 def compute_class_accuracies(pred, label, num_classes):
     total = []
@@ -237,7 +226,8 @@ def evaluate_segmentation(pred, label, num_classes, score_averaging="weighted"):
     flat_pred = pred.flatten()
     flat_label = label.flatten()
 
-    global_accuracy = compute_global_accuracy(flat_pred, flat_label)
+    accuracy = accuracy_score(flat_label, flat_pred)
+    balanced_accuracy = balanced_accuracy_score(flat_label, flat_pred)
     class_accuracies = compute_class_accuracies(flat_pred, flat_label, num_classes)
 
     prec = precision_score(flat_label, flat_pred, average=score_averaging)
@@ -246,7 +236,7 @@ def evaluate_segmentation(pred, label, num_classes, score_averaging="weighted"):
 
     iou = compute_mean_iou(flat_pred, flat_label)
 
-    return global_accuracy, class_accuracies, prec, rec, f1, iou
+    return accuracy, balanced_accuracy, class_accuracies, prec, rec, f1, iou
 
     
 def compute_class_weights(labels_dir, label_values):

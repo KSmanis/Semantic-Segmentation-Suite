@@ -221,10 +221,11 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
     if epoch % args.validation_step == 0:
         print("Performing validation")
         target=open("%s/%04d/val_scores.csv"%("checkpoints",epoch),'w')
-        target.write("val_name, avg_accuracy, precision, recall, f1 score, mean iou, %s\n" % (class_names_string))
+        target.write("val_name, accuracy, balanced_accuracy, precision, recall, f1, iou, %s\n" % (class_names_string))
 
 
         scores_list = []
+        balanced_scores_list = []
         class_scores_list = []
         precision_list = []
         recall_list = []
@@ -248,15 +249,16 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
             output_image = helpers.reverse_one_hot(output_image)
             out_vis_image = helpers.colour_code_segmentation(output_image, label_values)
 
-            accuracy, class_accuracies, prec, rec, f1, iou = utils.evaluate_segmentation(pred=output_image, label=gt, num_classes=num_classes)
+            accuracy, balanced_accuracy, class_accuracies, prec, rec, f1, iou = utils.evaluate_segmentation(pred=output_image, label=gt, num_classes=num_classes)
 
             file_name = utils.filepath_to_name(val_input_names[ind])
-            target.write("%s, %f, %f, %f, %f, %f"%(file_name, accuracy, prec, rec, f1, iou))
+            target.write("%s, %f, %f, %f, %f, %f, %f"%(file_name, accuracy, balanced_accuracy, prec, rec, f1, iou))
             for item in class_accuracies:
                 target.write(", %f"%(item))
             target.write("\n")
 
             scores_list.append(accuracy)
+            balanced_scores_list.append(balanced_accuracy)
             class_scores_list.append(class_accuracies)
             precision_list.append(prec)
             recall_list.append(rec)
@@ -275,22 +277,24 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
         target.close()
 
         avg_score = np.mean(scores_list)
+        avg_balanced_score = np.mean(balanced_scores_list)
         class_avg_scores = np.mean(class_scores_list, axis=0)
-        avg_scores_per_epoch.append(avg_score)
+        avg_scores_per_epoch.append(avg_balanced_score)
         avg_precision = np.mean(precision_list)
         avg_recall = np.mean(recall_list)
         avg_f1 = np.mean(f1_list)
         avg_iou = np.mean(iou_list)
         avg_iou_per_epoch.append(avg_iou)
 
-        print("\nAverage validation accuracy for epoch # %04d = %f"% (epoch, avg_score))
-        print("Average per class validation accuracies for epoch # %04d:"% (epoch))
+        print(f"Accuracy = {avg_score}")
+        print(f"Balanced accuracy = {avg_balanced_score}")
+        print(f"Class accuracies:")
         for index, item in enumerate(class_avg_scores):
-            print("%s = %f" % (class_names_list[index], item))
-        print("Validation precision = ", avg_precision)
-        print("Validation recall = ", avg_recall)
-        print("Validation F1 score = ", avg_f1)
-        print("Validation IoU score = ", avg_iou)
+            print("\t%s = %f" % (class_names_list[index], item))
+        print(f"Precision = {avg_precision}")
+        print(f"Recall = {avg_recall}")
+        print(f"F1 = {avg_f1}")
+        print(f"IoU = {avg_iou}")
 
     epoch_time=time.time()-epoch_st
     remain_time=epoch_time*(args.num_epochs-1-epoch)
@@ -307,9 +311,9 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
     fig1, ax1 = plt.subplots(figsize=(11, 8))
 
     ax1.plot(range(epoch+1), avg_scores_per_epoch)
-    ax1.set_title("Average validation accuracy vs epochs")
+    ax1.set_title("Average balanced accuracy vs epochs")
     ax1.set_xlabel("Epoch")
-    ax1.set_ylabel("Avg. val. accuracy")
+    ax1.set_ylabel("Avg. bal. accuracy")
 
 
     plt.savefig('accuracy_vs_epochs.png')
