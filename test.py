@@ -102,8 +102,6 @@ for ind in range(len(test_input_names)):
     cv2.imwrite("%s/%s_gt.png"%("Test", file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
 
 
-target.close()
-
 avg_score = np.mean(scores_list)
 avg_balanced_score = np.mean(balanced_scores_list)
 class_avg_scores = np.mean(class_scores_list, axis=0)
@@ -112,6 +110,13 @@ avg_recall = np.mean(recall_list)
 avg_f1 = np.mean(f1_list)
 avg_iou = np.mean(iou_list)
 avg_time = np.mean(run_times_list)
+
+target.write("%s, %f, %f, %f, %f, %f, %f"%("Average", avg_score, avg_balanced_score, avg_precision, avg_recall, avg_f1, avg_iou))
+for item in class_avg_scores:
+    target.write(", %f"%(item))
+target.write("\n")
+target.close()
+
 print(f"Accuracy = {avg_score}")
 print(f"Balanced accuracy = {avg_balanced_score}")
 print(f"Class accuracies:")

@@ -274,8 +274,6 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
             cv2.imwrite("%s/%04d/%s_gt.png"%("checkpoints",epoch, file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
 
 
-        target.close()
-
         avg_score = np.mean(scores_list)
         avg_balanced_score = np.mean(balanced_scores_list)
         class_avg_scores = np.mean(class_scores_list, axis=0)
@@ -285,6 +283,12 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
         avg_f1 = np.mean(f1_list)
         avg_iou = np.mean(iou_list)
         avg_iou_per_epoch.append(avg_iou)
+
+        target.write("%s, %f, %f, %f, %f, %f, %f"%("Average", avg_score, avg_balanced_score, avg_precision, avg_recall, avg_f1, avg_iou))
+        for item in class_avg_scores:
+            target.write(", %f"%(item))
+        target.write("\n")
+        target.close()
 
         print(f"Accuracy = {avg_score}")
         print(f"Balanced accuracy = {avg_balanced_score}")
