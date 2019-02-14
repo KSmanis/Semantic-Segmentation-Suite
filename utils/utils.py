@@ -210,7 +210,7 @@ def compute_mean_iou(pred, label):
     return mean_iou
 
 
-def evaluate_segmentation(pred, label, num_classes, score_averaging="weighted"):
+def evaluate_segmentation(pred, label, num_classes, score_averaging="macro"):
     flat_pred = pred.flatten()
     flat_label = label.flatten()
 
