@@ -178,27 +178,15 @@ def random_crop(image, label, crop_height, crop_width):
     else:
         raise Exception('Crop shape (%d, %d) exceeds image dimensions (%d, %d)!' % (crop_height, crop_width, image.shape[0], image.shape[1]))
 
-# Compute the class-specific segmentation accuracy
+
 def compute_class_accuracies(pred, label, num_classes):
-    total = []
-    for val in range(num_classes):
-        total.append((label == val).sum())
-
-    count = [0.0] * num_classes
-    for i in range(len(label)):
-        if pred[i] == label[i]:
-            count[int(pred[i])] = count[int(pred[i])] + 1.0
-
-    # If there are no pixels from a certain class in the GT, 
-    # it returns NAN because of divide by zero
-    # Replace the nans with a 1.0.
     accuracies = []
-    for i in range(len(total)):
-        if total[i] == 0:
-            accuracies.append(1.0)
-        else:
-            accuracies.append(count[i] / total[i])
-
+    for i in range(num_classes):
+        pred_i = pred == i
+        label_i = label == i
+        count = np.sum(np.logical_and(pred_i, label_i))
+        total = np.sum(label_i)
+        accuracies.append(count / total if total > 0 else 1.0)
     return accuracies
 
 
