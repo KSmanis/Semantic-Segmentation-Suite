@@ -193,7 +193,7 @@ def compute_class_accuracies(pred, label, num_classes):
 def compute_mean_iou(pred, label):
 
     unique_labels = np.unique(label)
-    num_unique_labels = len(unique_labels);
+    num_unique_labels = len(unique_labels)
 
     I = np.zeros(num_unique_labels)
     U = np.zeros(num_unique_labels)
