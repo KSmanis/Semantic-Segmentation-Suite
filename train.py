@@ -139,6 +139,7 @@ print("")
 avg_loss_per_epoch = []
 avg_scores_per_epoch = []
 avg_iou_per_epoch = []
+fig, ax = plt.subplots(figsize=(11, 8))
 
 # Which validation images do we want
 val_indices = []
@@ -311,38 +312,23 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
     utils.LOG(train_time)
     scores_list = []
 
-
-    fig1, ax1 = plt.subplots(figsize=(11, 8))
-
-    ax1.plot(range(epoch+1), avg_scores_per_epoch)
-    ax1.set_title("Average balanced accuracy vs epochs")
-    ax1.set_xlabel("Epoch")
-    ax1.set_ylabel("Avg. bal. accuracy")
-
-
-    plt.savefig('accuracy_vs_epochs.png')
-
-    plt.clf()
-
-    fig2, ax2 = plt.subplots(figsize=(11, 8))
-
-    ax2.plot(range(epoch+1), avg_loss_per_epoch)
-    ax2.set_title("Average loss vs epochs")
-    ax2.set_xlabel("Epoch")
-    ax2.set_ylabel("Current loss")
-
-    plt.savefig('loss_vs_epochs.png')
-
-    plt.clf()
-
-    fig3, ax3 = plt.subplots(figsize=(11, 8))
-
-    ax3.plot(range(epoch+1), avg_iou_per_epoch)
-    ax3.set_title("Average IoU vs epochs")
-    ax3.set_xlabel("Epoch")
-    ax3.set_ylabel("Current IoU")
-
+    ax.plot(range(epoch+1), avg_iou_per_epoch)
+    ax.set_title("Average IoU vs epochs")
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Average IoU")
     plt.savefig('iou_vs_epochs.png')
+    plt.cla()
 
+    ax.plot(range(epoch+1), avg_loss_per_epoch)
+    ax.set_title("Average loss vs epochs")
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Average loss")
+    plt.savefig('loss_vs_epochs.png')
+    plt.cla()
 
-
+    ax.plot(range(epoch+1), avg_scores_per_epoch)
+    ax.set_title("Average balanced accuracy vs epochs")
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Average balanced accuracy")
+    plt.savefig('accuracy_vs_epochs.png')
+    plt.cla()
