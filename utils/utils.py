@@ -7,7 +7,7 @@ import time, datetime
 import os, random
 from scipy.misc import imread
 import ast
-from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, precision_recall_fscore_support
 
 from utils import helpers
 
@@ -179,52 +179,38 @@ def random_crop(image, label, crop_height, crop_width):
         raise Exception('Crop shape (%d, %d) exceeds image dimensions (%d, %d)!' % (crop_height, crop_width, image.shape[0], image.shape[1]))
 
 
-def compute_class_accuracies(pred, label, num_classes):
-    accuracies = []
-    for i in range(num_classes):
-        pred_i = pred == i
-        label_i = label == i
-        count = np.sum(np.logical_and(pred_i, label_i))
-        total = np.sum(label_i)
-        accuracies.append(count / total if total > 0 else 1.0)
-    return accuracies
-
-
-def compute_mean_iou(pred, label):
-
+def compute_iou(pred, label):
     unique_labels = np.unique(label)
     num_unique_labels = len(unique_labels)
-
-    I = np.zeros(num_unique_labels)
-    U = np.zeros(num_unique_labels)
+    intersection = np.zeros(num_unique_labels)
+    union = np.zeros(num_unique_labels)
 
     for index, val in enumerate(unique_labels):
         pred_i = pred == val
         label_i = label == val
+        intersection[index] = float(np.sum(np.logical_and(label_i, pred_i)))
+        union[index] = float(np.sum(np.logical_or(label_i, pred_i)))
 
-        I[index] = float(np.sum(np.logical_and(label_i, pred_i)))
-        U[index] = float(np.sum(np.logical_or(label_i, pred_i)))
-
-
-    mean_iou = np.mean(I / U)
-    return mean_iou
+    iou = intersection / union
+    return [np.mean(iou), *iou.tolist()]
 
 
-def evaluate_segmentation(pred, label, num_classes, score_averaging="macro"):
+def evaluate_segmentation(pred, label, metric_average):
     flat_pred = pred.flatten()
     flat_label = label.flatten()
 
-    accuracy = accuracy_score(flat_label, flat_pred)
+    global_accuracy = accuracy_score(flat_label, flat_pred)
     balanced_accuracy = balanced_accuracy_score(flat_label, flat_pred)
-    class_accuracies = compute_class_accuracies(flat_pred, flat_label, num_classes)
+    iou = compute_iou(flat_pred, flat_label)
 
-    prec = precision_score(flat_label, flat_pred, average=score_averaging)
-    rec = recall_score(flat_label, flat_pred, average=score_averaging)
-    f1 = f1_score(flat_label, flat_pred, average=score_averaging)
+    avg_stats = precision_recall_fscore_support(flat_label, flat_pred, average=metric_average)
+    class_stats = precision_recall_fscore_support(flat_label, flat_pred, average=None)
+    prec = [avg_stats[0], *class_stats[0]]
+    rec = [avg_stats[1], *class_stats[1]]
+    f1 = [avg_stats[2], *class_stats[2]]
+    sup = [1.0, *[s / sum(class_stats[3]) for s in class_stats[3]]]
 
-    iou = compute_mean_iou(flat_pred, flat_label)
-
-    return accuracy, balanced_accuracy, class_accuracies, prec, rec, f1, iou
+    return global_accuracy, balanced_accuracy, iou, prec, rec, f1, sup
 
     
 def compute_class_weights(labels_dir, label_values):
@@ -275,3 +261,6 @@ def memory():
     memoryUse = py.memory_info()[0]/2.**30  # Memory use in GB
     print('Memory usage in GBs:', memoryUse)
 
+
+def list_to_string(l, sep=':'):
+    return sep.join(str(i) for i in l)
