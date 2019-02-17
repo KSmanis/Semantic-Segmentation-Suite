@@ -179,32 +179,31 @@ def random_crop(image, label, crop_height, crop_width):
         raise Exception('Crop shape (%d, %d) exceeds image dimensions (%d, %d)!' % (crop_height, crop_width, image.shape[0], image.shape[1]))
 
 
-def compute_iou(pred, label):
-    unique_labels = np.unique(label)
-    num_unique_labels = len(unique_labels)
-    intersection = np.zeros(num_unique_labels)
-    union = np.zeros(num_unique_labels)
+def compute_iou(pred, label, num_classes):
+    labels = range(num_classes)
+    intersection = np.zeros(num_classes)
+    union = np.zeros(num_classes)
 
-    for index, val in enumerate(unique_labels):
+    for index, val in enumerate(labels):
         pred_i = pred == val
         label_i = label == val
         intersection[index] = float(np.sum(np.logical_and(label_i, pred_i)))
         union[index] = float(np.sum(np.logical_or(label_i, pred_i)))
 
-    iou = intersection / union
+    iou = np.divide(intersection, union, out=np.zeros(num_classes), where=union!=0)
     return [np.mean(iou), *iou.tolist()]
 
 
-def evaluate_segmentation(pred, label, metric_average):
+def evaluate_segmentation(pred, label, num_classes, metric_average):
     flat_pred = pred.flatten()
     flat_label = label.flatten()
 
     global_accuracy = accuracy_score(flat_label, flat_pred)
     balanced_accuracy = balanced_accuracy_score(flat_label, flat_pred)
-    iou = compute_iou(flat_pred, flat_label)
+    iou = compute_iou(flat_pred, flat_label, num_classes)
 
-    avg_stats = precision_recall_fscore_support(flat_label, flat_pred, average=metric_average)
-    class_stats = precision_recall_fscore_support(flat_label, flat_pred, average=None)
+    avg_stats = precision_recall_fscore_support(flat_label, flat_pred, labels=range(num_classes), average=metric_average)
+    class_stats = precision_recall_fscore_support(flat_label, flat_pred, labels=range(num_classes), average=None)
     prec = [avg_stats[0], *class_stats[0]]
     rec = [avg_stats[1], *class_stats[1]]
     f1 = [avg_stats[2], *class_stats[2]]

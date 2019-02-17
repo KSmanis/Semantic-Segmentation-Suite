@@ -75,7 +75,7 @@ for ind in range(len(test_input_names)):
     output_image = helpers.reverse_one_hot(output_image)
     out_vis_image = helpers.colour_code_segmentation(output_image, label_values)
 
-    global_accuracy, balanced_accuracy, iou, precision, recall, f1, support = utils.evaluate_segmentation(output_image, gt, args.metric_average)
+    global_accuracy, balanced_accuracy, iou, precision, recall, f1, support = utils.evaluate_segmentation(output_image, gt, num_classes, args.metric_average)
 
     file_name = utils.filepath_to_name(test_input_names[ind])
     target.write("%s, %f, %f, %s, %s, %s, %s, %s, %f\n" % (file_name, global_accuracy, balanced_accuracy, l2s(iou), l2s(precision), l2s(recall), l2s(f1), l2s(support), run_time))
