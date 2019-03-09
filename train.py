@@ -1,5 +1,5 @@
 from __future__ import print_function
-import os,time,cv2, sys, math
+import os,time,cv2, sys, math, datetime
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import numpy as np
@@ -15,6 +15,7 @@ import matplotlib
 matplotlib.use('Agg')
 
 from utils import utils, helpers
+from utils.utils import list_to_string as l2s
 from builders import model_builder
 
 import matplotlib.pyplot as plt
@@ -45,6 +46,7 @@ parser.add_argument('--brightness', type=float, default=None, help='Whether to r
 parser.add_argument('--rotation', type=float, default=None, help='Whether to randomly rotate the image for data augmentation. Specifies the max rotation angle in degrees.')
 parser.add_argument('--model', type=str, default="FC-DenseNet56", help='The model you are using. See model_builder.py for supported models')
 parser.add_argument('--frontend', type=str, default="ResNet101", help='The frontend you are using. See frontend_builder.py for supported models')
+parser.add_argument('--metric_average', type=str, default="weighted", required=False, help='The average to apply for the performance metrics as used by sklearn.metrics.precision_recall_fscore_support. One of ["macro", "micro", "weighted"].')
 args = parser.parse_args()
 
 
@@ -73,15 +75,8 @@ def data_augmentation(input_image, output_image):
 
 
 # Get the names of the classes so we can record the evaluation results
-class_names_list, label_values = helpers.get_label_info(os.path.join(args.dataset, "class_dict.csv"))
-class_names_string = ""
-for class_name in class_names_list:
-    if not class_name == class_names_list[-1]:
-        class_names_string = class_names_string + class_name + ", "
-    else:
-        class_names_string = class_names_string + class_name
-
-num_classes = len(label_values)
+class_names, label_values = helpers.get_label_info(os.path.join(args.dataset, "class_dict.csv"))
+num_classes = len(class_names)
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -222,17 +217,16 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
     if epoch % args.validation_step == 0:
         print("Performing validation")
         target=open("%s/%04d/val_scores.csv"%("checkpoints",epoch),'w')
-        target.write("val_name, accuracy, balanced_accuracy, precision, recall, f1, iou, %s\n" % (class_names_string))
+        target.write("val_name, global_accuracy, balanced_accuracy, iou, precision, recall, f1, support, run_time\n")
 
-
-        scores_list = []
-        balanced_scores_list = []
-        class_scores_list = []
+        global_accuracy_list = []
+        balanced_accuracy_list = []
+        iou_list = []
         precision_list = []
         recall_list = []
         f1_list = []
-        iou_list = []
-
+        support_list = []
+        run_time_list = []
 
         # Do the validation on a small set of validation images
         for ind in val_indices:
@@ -241,30 +235,27 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
             gt = utils.load_image(val_output_names[ind])[:args.crop_height, :args.crop_width]
             gt = helpers.reverse_one_hot(helpers.one_hot_it(gt, label_values))
 
-            # st = time.time()
-
+            st = time.time()
             output_image = sess.run(network,feed_dict={net_input:input_image})
-
+            run_time = time.time() - st
+            run_time_list.append(run_time)
 
             output_image = np.array(output_image[0,:,:,:])
             output_image = helpers.reverse_one_hot(output_image)
             out_vis_image = helpers.colour_code_segmentation(output_image, label_values)
 
-            accuracy, balanced_accuracy, class_accuracies, prec, rec, f1, iou = utils.evaluate_segmentation(pred=output_image, label=gt, num_classes=num_classes)
+            global_accuracy, balanced_accuracy, iou, precision, recall, f1, support = utils.evaluate_segmentation(output_image, gt, num_classes, args.metric_average)
 
             file_name = utils.filepath_to_name(val_input_names[ind])
-            target.write("%s, %f, %f, %f, %f, %f, %f"%(file_name, accuracy, balanced_accuracy, prec, rec, f1, iou))
-            for item in class_accuracies:
-                target.write(", %f"%(item))
-            target.write("\n")
+            target.write("%s, %f, %f, %s, %s, %s, %s, %s, %f\n" % (file_name, global_accuracy, balanced_accuracy, l2s(iou), l2s(precision), l2s(recall), l2s(f1), l2s(support), run_time))
 
-            scores_list.append(accuracy)
-            balanced_scores_list.append(balanced_accuracy)
-            class_scores_list.append(class_accuracies)
-            precision_list.append(prec)
-            recall_list.append(rec)
-            f1_list.append(f1)
+            global_accuracy_list.append(global_accuracy)
+            balanced_accuracy_list.append(balanced_accuracy)
             iou_list.append(iou)
+            precision_list.append(precision)
+            recall_list.append(recall)
+            f1_list.append(f1)
+            support_list.append(support)
 
             gt = helpers.colour_code_segmentation(gt, label_values)
 
@@ -274,32 +265,37 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
             cv2.imwrite("%s/%04d/%s_pred.png"%("checkpoints",epoch, file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
             cv2.imwrite("%s/%04d/%s_gt.png"%("checkpoints",epoch, file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
 
+        avg_global_accuracy = np.mean(global_accuracy_list)
+        avg_balanced_accuracy = np.mean(balanced_accuracy_list)
+        avg_iou = np.mean(iou_list, axis=0)
+        avg_precision = np.mean(precision_list, axis=0)
+        avg_recall = np.mean(recall_list, axis=0)
+        avg_f1 = np.mean(f1_list, axis=0)
+        avg_support = np.mean(support_list, axis=0)
+        avg_run_time = np.mean(run_time_list)
 
-        avg_score = np.mean(scores_list)
-        avg_balanced_score = np.mean(balanced_scores_list)
-        class_avg_scores = np.mean(class_scores_list, axis=0)
-        avg_scores_per_epoch.append(avg_balanced_score)
-        avg_precision = np.mean(precision_list)
-        avg_recall = np.mean(recall_list)
-        avg_f1 = np.mean(f1_list)
-        avg_iou = np.mean(iou_list)
-        avg_iou_per_epoch.append(avg_iou)
-
-        target.write("%s, %f, %f, %f, %f, %f, %f"%("Average", avg_score, avg_balanced_score, avg_precision, avg_recall, avg_f1, avg_iou))
-        for item in class_avg_scores:
-            target.write(", %f"%(item))
-        target.write("\n")
+        target.write("%s, %f, %f, %s, %s, %s, %s, %s, %f\n" % ("Average", avg_global_accuracy, avg_balanced_accuracy, l2s(avg_iou), l2s(avg_precision), l2s(avg_recall), l2s(avg_f1), l2s(avg_support), avg_run_time))
         target.close()
 
-        print(f"Accuracy = {avg_score}")
-        print(f"Balanced accuracy = {avg_balanced_score}")
-        print(f"Class accuracies:")
-        for index, item in enumerate(class_avg_scores):
-            print("\t%s = %f" % (class_names_list[index], item))
-        print(f"Precision = {avg_precision}")
-        print(f"Recall = {avg_recall}")
-        print(f"F1 = {avg_f1}")
-        print(f"IoU = {avg_iou}")
+        print('\n')
+        print(f"Global accuracy = {avg_global_accuracy:%}")
+        print(f"Balanced accuracy = {avg_balanced_accuracy:%}")
+        print(f"IoU = {avg_iou[0]:%}")
+        for index, item in enumerate(avg_iou[1:]):
+            print(f" * {class_names[index]} = {item:%}")
+        print(f"Precision = {avg_precision[0]:%}")
+        for index, item in enumerate(avg_precision[1:]):
+            print(f" * {class_names[index]} = {item:%}")
+        print(f"Recall = {avg_recall[0]:%}")
+        for index, item in enumerate(avg_recall[1:]):
+            print(f" * {class_names[index]} = {item:%}")
+        print(f"F1 = {avg_f1[0]:%}")
+        for index, item in enumerate(avg_f1[1:]):
+            print(f" * {class_names[index]} = {item:%}")
+        print(f"Support = {avg_support[0]:%}")
+        for index, item in enumerate(avg_support[1:]):
+            print(f" * {class_names[index]} = {item:%}")
+        print(f"Run time = {datetime.timedelta(seconds=avg_run_time)}")
 
     epoch_time=time.time()-epoch_st
     remain_time=epoch_time*(args.num_epochs-1-epoch)
@@ -310,7 +306,6 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
     else:
         train_time="Remaining training time : Training completed.\n"
     utils.LOG(train_time)
-    scores_list = []
 
     ax.plot(range(epoch+1), avg_iou_per_epoch)
     ax.set_title("Average IoU vs epochs")
