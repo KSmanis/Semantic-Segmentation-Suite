@@ -132,7 +132,7 @@ print("\tRotation -->", args.rotation)
 print("")
 
 avg_loss_per_epoch = []
-avg_scores_per_epoch = []
+avg_balanced_accuracy_per_epoch = []
 avg_iou_per_epoch = []
 fig, ax = plt.subplots(figsize=(11, 8))
 
@@ -267,7 +267,9 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
 
         avg_global_accuracy = np.mean(global_accuracy_list)
         avg_balanced_accuracy = np.mean(balanced_accuracy_list)
+        avg_balanced_accuracy_per_epoch.append(avg_balanced_accuracy)
         avg_iou = np.mean(iou_list, axis=0)
+        avg_iou_per_epoch.append(avg_iou[0])
         avg_precision = np.mean(precision_list, axis=0)
         avg_recall = np.mean(recall_list, axis=0)
         avg_f1 = np.mean(f1_list, axis=0)
@@ -321,7 +323,7 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
     plt.savefig('loss_vs_epochs.png')
     plt.cla()
 
-    ax.plot(range(epoch+1), avg_scores_per_epoch)
+    ax.plot(range(epoch+1), avg_balanced_accuracy_per_epoch)
     ax.set_title("Average balanced accuracy vs epochs")
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Average balanced accuracy")
