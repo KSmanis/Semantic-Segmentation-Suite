@@ -2,6 +2,7 @@ import os,time,cv2, sys, math, datetime
 import tensorflow as tf
 import argparse
 import numpy as np
+from tqdm import tqdm
 
 from utils import utils, helpers
 from utils.utils import list_to_string as l2s
@@ -58,11 +59,8 @@ support_list = []
 run_time_list = []
 
 # Run testing on ALL test images
-for ind in range(len(test_input_names)):
-    sys.stdout.write("\rRunning test image %d / %d"%(ind+1, len(test_input_names)))
-    sys.stdout.flush()
-
-    input_image = np.expand_dims(np.float32(utils.load_image(test_input_names[ind])[:args.crop_height, :args.crop_width]),axis=0)/255.0
+for ind, test_input_name in enumerate(tqdm(test_input_names, desc='Testing')):
+    input_image = np.expand_dims(np.float32(utils.load_image(test_input_name)[:args.crop_height, :args.crop_width]),axis=0)/255.0
     gt = utils.load_image(test_output_names[ind])[:args.crop_height, :args.crop_width]
     gt = helpers.reverse_one_hot(helpers.one_hot_it(gt, label_values))
 
@@ -77,7 +75,7 @@ for ind in range(len(test_input_names)):
 
     global_accuracy, balanced_accuracy, iou, precision, recall, f1, support = utils.evaluate_segmentation(output_image, gt, num_classes, args.metric_average)
 
-    file_name = utils.filepath_to_name(test_input_names[ind])
+    file_name = utils.filepath_to_name(test_input_name)
     target.write("%s, %f, %f, %s, %s, %s, %s, %s, %f\n" % (file_name, global_accuracy, balanced_accuracy, l2s(iou), l2s(precision), l2s(recall), l2s(f1), l2s(support), run_time))
 
     global_accuracy_list.append(global_accuracy)
@@ -90,7 +88,7 @@ for ind in range(len(test_input_names)):
 
     gt = helpers.colour_code_segmentation(gt, label_values)
 
-    os.symlink(test_input_names[ind], "%s/%s"%("Test", os.path.basename(test_input_names[ind])))
+    os.symlink(test_input_name, "%s/%s"%("Test", os.path.basename(test_input_name)))
     cv2.imwrite("%s/%s_pred.png"%("Test", file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
     cv2.imwrite("%s/%s_gt.png"%("Test", file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
 

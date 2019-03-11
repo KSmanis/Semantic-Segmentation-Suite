@@ -8,6 +8,7 @@ import argparse
 import random
 import os, sys
 import subprocess
+from tqdm import tqdm
 
 # use 'Agg' on matplotlib so that plots could be generated even without Xserver
 # running
@@ -150,17 +151,12 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
 
     current_losses = []
 
-    cnt=0
-
     # Equivalent to shuffling
     id_list = np.random.permutation(len(train_input_names))
 
     num_iters = int(np.floor(len(id_list) / args.batch_size))
-    st = time.time()
     epoch_st=time.time()
-    for i in range(num_iters):
-        # st=time.time()
-
+    for i in tqdm(range(num_iters), desc=f'Training Epoch #{epoch}'):
         input_image_batch = []
         output_image_batch = []
 
@@ -192,11 +188,6 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
         # Do the training
         _,current=sess.run([opt,loss],feed_dict={net_input:input_image_batch,net_output:output_image_batch})
         current_losses.append(current)
-        cnt = cnt + args.batch_size
-        if cnt % 20 == 0:
-            string_print = "Epoch = %d Count = %d Current_Loss = %.4f Time = %.2f"%(epoch,cnt,current,time.time()-st)
-            utils.LOG(string_print)
-            st = time.time()
 
     mean_loss = np.mean(current_losses)
     avg_loss_per_epoch.append(mean_loss)
@@ -229,8 +220,7 @@ for epoch in range(args.epoch_start_i, args.num_epochs):
         run_time_list = []
 
         # Do the validation on a small set of validation images
-        for ind in val_indices:
-
+        for ind in tqdm(val_indices, desc=f'Validation Epoch #{epoch}'):
             input_image = np.expand_dims(np.float32(utils.load_image(val_input_names[ind])[:args.crop_height, :args.crop_width]),axis=0)/255.0
             gt = utils.load_image(val_output_names[ind])[:args.crop_height, :args.crop_width]
             gt = helpers.reverse_one_hot(helpers.one_hot_it(gt, label_values))
