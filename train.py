@@ -46,7 +46,7 @@ parser.add_argument('--brightness', type=float, default=None, help='Whether to r
 parser.add_argument('--rotation', type=float, default=None, help='Whether to randomly rotate the image for data augmentation. Specifies the max rotation angle in degrees.')
 parser.add_argument('--model', type=str, default="FC-DenseNet56", help='The model you are using. See model_builder.py for supported models')
 parser.add_argument('--frontend', type=str, default="ResNet101", help='The frontend you are using. See frontend_builder.py for supported models')
-parser.add_argument('--metric_average', type=str, default="weighted", required=False, help='The average to apply for the performance metrics as used by sklearn.metrics.precision_recall_fscore_support. One of ["macro", "micro", "weighted"].')
+parser.add_argument('--metric_average', type=str, default="weighted", help='The average to apply for the performance metrics as used by sklearn.metrics.precision_recall_fscore_support. One of ["macro", "micro", "weighted"].')
 args = parser.parse_args()
 
 
