@@ -138,7 +138,7 @@ fig, ax = plt.subplots(figsize=(11, 8))
 
 # Which validation images do we want
 val_indices = []
-num_vals = min(args.num_val_images, len(val_input_names))
+num_vals = min(args.num_val_images, len(val_input_names)) if args.num_val_images >= 0 else len(val_input_names)
 
 # Set random seed to make sure models are validated on the same validation images.
 # So you can compare the results of different models more intuitively.
