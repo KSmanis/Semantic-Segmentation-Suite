@@ -105,7 +105,6 @@ avg_run_time = np.mean(run_time_list)
 target.write("%s, %f, %f, %s, %s, %s, %s, %s, %f\n" % ("Average", avg_global_accuracy, avg_balanced_accuracy, l2s(avg_iou), l2s(avg_precision), l2s(avg_recall), l2s(avg_f1), l2s(avg_support), avg_run_time))
 target.close()
 
-print('\n')
 print(f"Global accuracy = {avg_global_accuracy:%}")
 print(f"Balanced accuracy = {avg_balanced_accuracy:%}")
 print(f"IoU = {avg_iou[0]:%}")
