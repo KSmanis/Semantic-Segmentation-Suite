@@ -5,7 +5,7 @@ import tensorflow.contrib.slim as slim
 import numpy as np
 import time, datetime
 import os, random
-from scipy.misc import imread
+from imageio import imread
 import ast
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, precision_recall_fscore_support
 

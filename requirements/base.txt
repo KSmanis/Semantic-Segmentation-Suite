@@ -1,3 +1,4 @@
+imageio
 matplotlib
 opencv-python
 scikit-learn
