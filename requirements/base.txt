@@ -2,5 +2,5 @@ imageio
 matplotlib
 opencv-python
 scikit-learn
-tensorflow
+tensorflow-gpu
 tqdm
